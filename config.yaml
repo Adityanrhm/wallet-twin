@@ -1,0 +1,65 @@
+# Wallet Twin Configuration File
+# ================================
+#
+# File ini berisi konfigurasi default untuk aplikasi.
+# Kamu bisa override nilai-nilai ini dengan environment variables.
+#
+# Format environment variable:
+#   WALLET_{SECTION}_{KEY}
+#
+# Contoh:
+#   WALLET_DATABASE_HOST=myserver.com
+#   WALLET_DATABASE_PASSWORD=supersecret
+#   WALLET_APP_CURRENCY=USD
+
+# Database Configuration
+# ----------------------
+# Konfigurasi koneksi ke PostgreSQL
+database:
+  # Host database server
+  # Untuk local development, gunakan "localhost"
+  # Untuk Docker, gunakan nama container (misal: "db")
+  host: localhost
+
+  # Port PostgreSQL (default: 5432)
+  port: 5432
+
+  # Nama database
+  # Pastikan database ini sudah dibuat sebelum menjalankan aplikasi
+  name: wallet_twin
+
+  # Username database
+  user: postgres
+
+  # Password database
+  # PENTING: Di production, gunakan environment variable!
+  password: postgres
+
+  # SSL Mode untuk koneksi
+  # Options: disable, require, verify-ca, verify-full
+  # Untuk local development: disable
+  # Untuk production: require atau verify-full
+  ssl_mode: disable
+
+# Application Configuration
+# -------------------------
+app:
+  # Nama aplikasi (ditampilkan di header)
+  name: Wallet Twin
+
+  # Default currency untuk transaksi
+  # ISO 4217 currency code
+  currency: IDR
+
+  # Locale untuk formatting (tanggal, angka)
+  locale: id-ID
+
+# TUI Configuration
+# -----------------
+tui:
+  # Theme warna
+  # Options: default, dark, light
+  theme: default
+
+  # Refresh rate dashboard (dalam milliseconds)
+  refresh_rate: 1000
