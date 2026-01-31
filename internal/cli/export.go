@@ -16,8 +16,8 @@ import (
 // exportCmd adalah parent command untuk export operations.
 var exportCmd = &cobra.Command{
 	Use:   "export",
-	Short: "📤 Export data to CSV/JSON",
-	Long:  "Export your financial data to CSV or JSON format.",
+	Short: "📤 Export data to CSV/JSON/Excel/PDF",
+	Long:  "Export your financial data to various formats.",
 }
 
 // exportAllCmd exports semua data ke JSON.
@@ -55,30 +55,56 @@ var exportAllCmd = &cobra.Command{
 var exportTransactionsCmd = &cobra.Command{
 	Use:     "transactions",
 	Aliases: []string{"tx"},
-	Short:   "Export transactions to CSV/JSON",
+	Short:   "Export transactions to CSV/JSON/Excel/PDF",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-
-		exporter := export.NewExporter(
-			application.Repos.Wallet,
-			application.Repos.Transaction,
-			application.Repos.Category,
-			application.Repos.Goal,
-		)
-
-		output, _ := cmd.Flags().GetString("output")
 		format, _ := cmd.Flags().GetString("format")
-
-		if output == "" {
-			output = fmt.Sprintf("transactions-%s.%s", time.Now().Format("20060102"), format)
-		}
+		output, _ := cmd.Flags().GetString("output")
 
 		filter := repository.TransactionFilter{}
 
+		// Set default output filename based on format
+		if output == "" {
+			ext := format
+			if format == "excel" {
+				ext = "xlsx"
+			}
+			output = fmt.Sprintf("transactions-%s.%s", time.Now().Format("20060102"), ext)
+		}
+
 		var err error
-		if format == "json" {
+		switch format {
+		case "pdf":
+			pdfExporter := export.NewPDFExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+			)
+			err = pdfExporter.TransactionsToPDF(ctx, output, filter)
+
+		case "excel", "xlsx":
+			excelExporter := export.NewExcelExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+				application.Repos.Category,
+			)
+			err = excelExporter.TransactionsToExcel(ctx, output, filter)
+
+		case "json":
+			exporter := export.NewExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+				application.Repos.Category,
+				application.Repos.Goal,
+			)
 			err = exporter.TransactionsToJSON(ctx, output, filter)
-		} else {
+
+		default: // csv
+			exporter := export.NewExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+				application.Repos.Category,
+				application.Repos.Goal,
+			)
 			err = exporter.TransactionsToCSV(ctx, output, filter)
 		}
 
@@ -89,6 +115,7 @@ var exportTransactionsCmd = &cobra.Command{
 		absPath, _ := filepath.Abs(output)
 		fmt.Println(successStyle.Render("✅ Transactions exported!"))
 		fmt.Printf("   📁 File: %s\n", absPath)
+		fmt.Printf("   📋 Format: %s\n", strings.ToUpper(format))
 
 		return nil
 	},
@@ -97,28 +124,54 @@ var exportTransactionsCmd = &cobra.Command{
 // exportWalletsCmd exports wallets.
 var exportWalletsCmd = &cobra.Command{
 	Use:   "wallets",
-	Short: "Export wallets to CSV/JSON",
+	Short: "Export wallets to CSV/JSON/Excel/PDF",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-
-		exporter := export.NewExporter(
-			application.Repos.Wallet,
-			application.Repos.Transaction,
-			application.Repos.Category,
-			application.Repos.Goal,
-		)
-
-		output, _ := cmd.Flags().GetString("output")
 		format, _ := cmd.Flags().GetString("format")
+		output, _ := cmd.Flags().GetString("output")
 
+		// Set default output filename based on format
 		if output == "" {
-			output = fmt.Sprintf("wallets-%s.%s", time.Now().Format("20060102"), format)
+			ext := format
+			if format == "excel" {
+				ext = "xlsx"
+			}
+			output = fmt.Sprintf("wallets-%s.%s", time.Now().Format("20060102"), ext)
 		}
 
 		var err error
-		if format == "json" {
+		switch format {
+		case "pdf":
+			pdfExporter := export.NewPDFExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+			)
+			err = pdfExporter.WalletsToPDF(ctx, output)
+
+		case "excel", "xlsx":
+			excelExporter := export.NewExcelExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+				application.Repos.Category,
+			)
+			err = excelExporter.WalletsToExcel(ctx, output)
+
+		case "json":
+			exporter := export.NewExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+				application.Repos.Category,
+				application.Repos.Goal,
+			)
 			err = exporter.WalletsToJSON(ctx, output)
-		} else {
+
+		default: // csv
+			exporter := export.NewExporter(
+				application.Repos.Wallet,
+				application.Repos.Transaction,
+				application.Repos.Category,
+				application.Repos.Goal,
+			)
 			err = exporter.WalletsToCSV(ctx, output)
 		}
 
@@ -129,6 +182,7 @@ var exportWalletsCmd = &cobra.Command{
 		absPath, _ := filepath.Abs(output)
 		fmt.Println(successStyle.Render("✅ Wallets exported!"))
 		fmt.Printf("   📁 File: %s\n", absPath)
+		fmt.Printf("   📋 Format: %s\n", strings.ToUpper(format))
 
 		return nil
 	},
@@ -226,14 +280,14 @@ func init() {
 	exportAllCmd.Flags().StringP("output", "o", "", "Output filename")
 	exportCmd.AddCommand(exportAllCmd)
 
-	// export transactions
+	// export transactions - supports pdf, excel, csv, json
 	exportTransactionsCmd.Flags().StringP("output", "o", "", "Output filename")
-	exportTransactionsCmd.Flags().StringP("format", "f", "csv", "Output format: csv or json")
+	exportTransactionsCmd.Flags().StringP("format", "f", "csv", "Output format: csv, json, excel, pdf")
 	exportCmd.AddCommand(exportTransactionsCmd)
 
-	// export wallets
+	// export wallets - supports pdf, excel, csv, json
 	exportWalletsCmd.Flags().StringP("output", "o", "", "Output filename")
-	exportWalletsCmd.Flags().StringP("format", "f", "csv", "Output format: csv or json")
+	exportWalletsCmd.Flags().StringP("format", "f", "csv", "Output format: csv, json, excel, pdf")
 	exportCmd.AddCommand(exportWalletsCmd)
 
 	// import transactions
