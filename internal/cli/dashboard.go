@@ -1,9 +1,10 @@
 package cli
 
 import (
-	"fmt"
-
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
+
+	"github.com/Adityanrhm/wallet-twin/internal/tui"
 )
 
 // dashboardCmd membuka TUI dashboard.
@@ -13,19 +14,17 @@ var dashboardCmd = &cobra.Command{
 	Short:   "🖥️ Open interactive TUI dashboard",
 	Long:    "Launch the interactive terminal UI dashboard with real-time updates.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Implement TUI with Bubble Tea
-		// Ini akan di-implement di Phase 7 (TUI Dashboard)
+		// Create dashboard model
+		model := tui.NewDashboard(application)
 
-		fmt.Println(titleStyle.Render("\n🖥️  Dashboard\n"))
-		fmt.Println("Interactive TUI dashboard coming soon!")
-		fmt.Println()
-		fmt.Println("For now, use these commands:")
-		fmt.Println("  wallet wallet list    - List wallets")
-		fmt.Println("  wallet tx list        - List transactions")
-		fmt.Println("  wallet tx summary     - Monthly summary")
-		fmt.Println("  wallet budget list    - Budget status")
-		fmt.Println("  wallet goal list      - Goal progress")
+		// Create and run Bubble Tea program
+		p := tea.NewProgram(model, tea.WithAltScreen())
+
+		if _, err := p.Run(); err != nil {
+			return err
+		}
 
 		return nil
 	},
 }
+
