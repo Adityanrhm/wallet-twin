@@ -116,40 +116,29 @@ type TUIConfig struct {
 	RefreshRate int `mapstructure:"refresh_rate"`
 }
 
-// Load membaca konfigurasi dari file dan environment variables.
+// Load membaca konfigurasi dari environment variables.
 //
-// Parameter:
-//   - configPath: path ke file konfigurasi TANPA extension
-//     Contoh: "./config" akan mencari config.yaml, config.json, dll
+// Environment Variable Format:
 //
-// Flow:
-//  1. Set default values
-//  2. Baca dari config file
-//  3. Bind environment variables (override config file)
-//  4. Unmarshal ke Config struct
+//	WT_DATABASE_HOST     → database.host
+//	WT_DATABASE_PORT     → database.port
+//	WT_APP_CURRENCY      → app.currency
 //
-// Error dikembalikan jika:
-//   - Config file tidak ditemukan
-//   - Format config file invalid
-//   - Gagal parsing ke struct
+// Prefix adalah "WT" (Wallet Twin).
 //
 // Contoh:
 //
-//	cfg, err := config.Load("./config")
+//	cfg, err := config.Load()
 //	if err != nil {
 //	    log.Fatalf("Failed to load config: %v", err)
 //	}
-func Load(configPath string) (*Config, error) {
+func Load(_ string) (*Config, error) {
 	// 1. Set default values
-	// Defaults digunakan jika tidak ada di config file atau env vars
 	setDefaults()
 
-	// 2. Configure Viper untuk membaca config file
-	viper.SetConfigFile(configPath + ".yaml")
-
-	// 3. Enable automatic environment variable binding
-	// Prefix "WALLET" → WALLET_DATABASE_HOST, WALLET_APP_NAME, dll
-	viper.SetEnvPrefix("WALLET")
+	// 2. Enable automatic environment variable binding
+	// Prefix "WT" → WT_DATABASE_HOST, WT_APP_NAME, dll
+	viper.SetEnvPrefix("WT")
 
 	// Replace "." dengan "_" untuk nested keys
 	// database.host → DATABASE_HOST
@@ -158,16 +147,7 @@ func Load(configPath string) (*Config, error) {
 	// Automatically read matching env vars
 	viper.AutomaticEnv()
 
-	// 4. Read config file
-	if err := viper.ReadInConfig(); err != nil {
-		// Jangan error jika file tidak ditemukan
-		// Env vars atau defaults masih bisa digunakan
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("error reading config file: %w", err)
-		}
-	}
-
-	// 5. Unmarshal ke Config struct
+	// 3. Unmarshal ke Config struct
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
